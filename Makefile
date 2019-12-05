@@ -1,10 +1,19 @@
 PNGCRUSH := $(shell command -v pngcrush 2> /dev/null)
+UNAME := $(shell uname -s)
 
 # main targets
 
 .PHONY: rename
 rename:
 	go run cmd/rename/main.go
+
+.PHONY: scale
+scale:
+	go run cmd/scale/main.go
+
+.PHONY: trim
+trim:
+	go run cmd/trim/main.go
 
 .PHONY: spritesheet
 spritesheet: output
@@ -20,6 +29,11 @@ endif
 scss: output
 	go run cmd/scss/main.go
 
+.PHONY: copy
+copy:
+	cp output/pokesprite.png ../pokedextracker.com/public
+	cp output/pokesprite.scss ../pokedextracker.com/app/styles
+
 # helper targets
 
 .PHONY: clean
@@ -31,4 +45,9 @@ output:
 
 .PHONY: setup
 setup:
+ifeq ($(UNAME), Linux)
+	sudo apt-get install pngcrush
+endif
+ifeq ($(UNAME), Darwin)
 	brew install pngcrush
+endif

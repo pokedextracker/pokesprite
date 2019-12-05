@@ -10,7 +10,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
@@ -19,17 +18,26 @@ import (
 	"os"
 	"sort"
 
+	"github.com/pokedextracker/pokesprite/pkg/size"
 	"github.com/pokedextracker/pokesprite/pkg/sorter"
 )
 
 const (
-	height  = 30
-	width   = 50
 	columns = 32
+)
+
+var (
+	height = 0
+	width  = 0
 )
 
 func main() {
 	files, err := ioutil.ReadDir("./images")
+	if err != nil {
+		panic(err)
+	}
+
+	height, width, err = size.Max(files)
 	if err != nil {
 		panic(err)
 	}
@@ -70,6 +78,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer out.Close()
 	encoder := png.Encoder{CompressionLevel: png.BestCompression}
 	err = encoder.Encode(out, rgba)
 	if err != nil {
@@ -82,27 +91,85 @@ func drawImage(rgba draw.Image, name string, column, row int) error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 	img, _, err := image.Decode(file)
 	if err != nil {
 		return err
 	}
 
-	wdiff := width - img.Bounds().Dx()
-	if wdiff < 0 {
-		return fmt.Errorf("width (%dpx) is too small for %s (%dpx)", width, name, img.Bounds().Dx())
-	}
-	hdiff := height - img.Bounds().Dy()
-	if hdiff < 0 {
-		return fmt.Errorf("height (%dpx) is too small for %s (%dpx)", height, name, img.Bounds().Dy())
-	}
+	// wdiff := width - img.Bounds().Dx()
+	// if wdiff < 0 {
+	// 	return fmt.Errorf("width (%dpx) is too small for %s (%dpx)", width, name, img.Bounds().Dx())
+	// }
+	// hdiff := height - img.Bounds().Dy()
+	// if hdiff < 0 {
+	// 	return fmt.Errorf("height (%dpx) is too small for %s (%dpx)", height, name, img.Bounds().Dy())
+	// }
 
-	woffset := wdiff / 2
-	hoffset := hdiff / 2
-	x := column*width + woffset
-	y := row*height + hoffset
+	// woffset := wdiff / 2
+	// hoffset := hdiff / 2
+	x := column * width
+	y := row * height
+	// top, right, bottom, left := trim(img)
 
+	// rect := image.Rectangle{image.Point{x, y}, image.Point{x + (right - left), y + (bottom - top)}}
 	rect := image.Rectangle{image.Point{x, y}, image.Point{x + img.Bounds().Dx(), y + img.Bounds().Dy()}}
 	draw.Draw(rgba, rect, img, image.Point{0, 0}, draw.Src)
 
 	return nil
 }
+
+// func trim(img image.Image) (int, int, int, int) {
+// 	bounds := img.Bounds()
+// 	top := 0
+// 	right := 0
+// 	bottom := 0
+// 	left := 0
+
+// top:
+// 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+// 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+// 			_, _, _, a := img.At(x, y).RGBA()
+// 			transparent := a == 0
+// 			if !transparent {
+// 				top = y
+// 				break top
+// 			}
+// 		}
+// 	}
+// right:
+// 	for x := bounds.Max.X; x >= bounds.Min.X; x-- {
+// 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+// 			_, _, _, a := img.At(x, y).RGBA()
+// 			transparent := a == 0
+// 			if !transparent {
+// 				right = x + 1
+// 				break right
+// 			}
+// 		}
+// 	}
+// bottom:
+// 	for y := bounds.Max.Y; y >= bounds.Min.Y; y-- {
+// 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+// 			_, _, _, a := img.At(x, y).RGBA()
+// 			transparent := a == 0
+// 			if !transparent {
+// 				bottom = y + 1
+// 				break bottom
+// 			}
+// 		}
+// 	}
+// left:
+// 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+// 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+// 			_, _, _, a := img.At(x, y).RGBA()
+// 			transparent := a == 0
+// 			if !transparent {
+// 				left = x
+// 				break left
+// 			}
+// 		}
+// 	}
+
+// 	return top, right, bottom, left
+// }
