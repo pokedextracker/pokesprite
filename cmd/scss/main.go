@@ -15,31 +15,29 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pokedextracker/pokesprite/pkg/size"
 	"github.com/pokedextracker/pokesprite/pkg/sorter"
 )
 
 const (
-	height     = 30
-	width      = 50
-	baseHeight = 30
-	baseWidth  = 40
-	columns    = 32
+	columns = 32
 
 	preamble = `.pkicon {
   @include crisp-rendering();
 
   display: inline-block;
-  height: %dpx;
-  width: %dpx;
-  margin: 5px 0;
   background-image: url('/pokesprite.png');
   background-repeat: no-repeat;
-  %s /* setting this as the default position so any missing sprites will default to a centered love ball */
 }
 
 .pkicon.pkicon-ball-love { %s }
 
 `
+)
+
+var (
+	height = 0
+	width  = 0
 )
 
 var nameRE = regexp.MustCompile(`(\d+)(-shiny)?(-.*)?\.png`)
@@ -52,11 +50,16 @@ func main() {
 		panic(err)
 	}
 
+	height, width, err = size.Max(files)
+	if err != nil {
+		panic(err)
+	}
+
 	loveBallStyles, err := generateStyles("love-ball.png", 0, 0)
 	if err != nil {
 		panic(err)
 	}
-	_, err = buf.WriteString(fmt.Sprintf(preamble, baseHeight, baseWidth, loveBallStyles, loveBallStyles))
+	_, err = buf.WriteString(fmt.Sprintf(preamble, loveBallStyles))
 	if err != nil {
 		panic(err)
 	}
@@ -115,25 +118,19 @@ func generateStyles(name string, column, row int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	styles := ""
-
-	wdiff := width - baseWidth
-	hdiff := height - baseHeight
-
-	if img.Bounds().Dx() > baseWidth {
-		wdiff = width - img.Bounds().Dx()
-		styles += fmt.Sprintf("width: %dpx; ", img.Bounds().Dx())
-	}
-
-	woffset := wdiff / 2
-	hoffset := hdiff / 2
-	x := column*width + woffset
-	y := row*height + hoffset
+	bounds := img.Bounds()
+	x := column * width
+	y := row * height
 
 	// Due to the way background-position works, these values need to be
 	// negative.
-	styles += fmt.Sprintf("background-position: %dpx %dpx;", x*-1, y*-1)
+	styles := fmt.Sprintf(
+		"width: %dpx; height: %dpx; background-position: %dpx %dpx;",
+		bounds.Dx(),
+		bounds.Dy(),
+		x*-1,
+		y*-1,
+	)
 
 	return styles, nil
 }
