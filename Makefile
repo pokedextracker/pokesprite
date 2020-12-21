@@ -1,6 +1,10 @@
 PNGCRUSH := $(shell command -v pngcrush 2> /dev/null)
 UNAME := $(shell uname -s)
 
+# default
+
+default: scale trim spritesheet scss copy
+
 # main targets
 
 .PHONY: rename
