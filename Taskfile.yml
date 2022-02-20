@@ -18,6 +18,11 @@ tasks:
     cmds:
       - go run cmd/rename/main.go
 
+  chop:
+    desc: Chop up an existing spritesheet into separate images.
+    cmds:
+      - go run cmd/chop/main.go {{.CLI_ARGS}}
+
   scale:
     desc: Scale any images greater than 100px in any dimension by 0.5.
     cmds:

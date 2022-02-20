@@ -10,6 +10,8 @@ It currently consists of 6 scripts:
   [msikma/pokesprite](https://github.com/msikma/pokesprite) to names that can be
   used by the other scripts. Only use this one if you're copying over the
   `icons` and `data` directories from that repo.
+- `chop` - This takes in a JSON file explaining the details of an existing
+  spritesheet, and it chops it up into individual images.
 - `scale` - This takes any images in the `images` directory that are greater
   than 100px in either dimension (height or width) and scales it by factor or
   0.5. This script will modify the images in place.
@@ -31,6 +33,7 @@ To run any of them, it's a simple `task` command:
 
 ```sh
 task rename
+task chop -- data.json
 task scale
 task trim
 task spritesheet
