@@ -40,7 +40,7 @@ var (
 	width  = 0
 )
 
-var nameRE = regexp.MustCompile(`(\d+)(-shiny)?(-.*)?\.png`)
+var nameRE = regexp.MustCompile(`(\d+)(-shiny)?(-legends_arceus)?(-.*)?\.png`)
 
 func main() {
 	var buf bytes.Buffer
@@ -77,12 +77,17 @@ func main() {
 		matches := nameRE.FindAllStringSubmatch(name, -1)
 		id := matches[0][1]
 		shiny := matches[0][2] == "-shiny"
-		form := strings.Trim(matches[0][3], "-")
+		gameFamily := strings.Trim(matches[0][3], "-")
+		form := strings.Trim(matches[0][4], "-")
 
 		class := ".pkicon.pkicon-" + id
 
 		if form != "" {
 			class += ".form-" + form
+		}
+
+		if gameFamily != "" {
+			class += ".game-family-" + gameFamily
 		}
 
 		if shiny {
