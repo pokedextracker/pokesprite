@@ -27,23 +27,31 @@ It currently consists of 6 scripts:
   It assumes that this repo and that repo are both cloned in the same parent
   directory. If that is not the case, this script will err.
 
-To run any of them, it's a simple `make` target:
+To run any of them, it's a simple `task` command:
 
 ```sh
-make rename
-make scale
-make trim
-make spritesheet
-make scss
-make copy
+task rename
+task scale
+task trim
+task spritesheet
+task scss
+task copy
 ```
 
 ## Setup
 
-To have everything working as expected, you need to have a module-aware version
-of Go installed (v1.11 or greater) and `pngcrush`.
+### Task
+
+Instead of `make`, this project uses [`task`](https://taskfile.dev/#/). It seems
+to be a bit cleaner for some specific things that we want to do.
+
+You can find instructions on how to install it
+[here](https://taskfile.dev/#/installation).
 
 ### Go
+
+To have everything working as expected, you need to have a module-aware version
+of Go installed (v1.11 or greater) and `pngcrush`.
 
 To install Go, you can do it any way you prefer. We recommend using
 [`goenv`](https://github.com/syndbg/goenv) so that you can use the correct
@@ -67,9 +75,9 @@ goenv install
 
 ### `pngcrush`
 
-While `pngcrush` is optional, it is recommended. To install it, you can just run
-the following command:
+`pngcrush` is required for the `spritesheet` command. To install it, you can
+just run the following command:
 
 ```sh
-make setup
+task setup
 ```
