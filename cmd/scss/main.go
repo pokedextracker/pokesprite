@@ -28,6 +28,10 @@ const (
   display: inline-block;
   background-image: url('/pokesprite.png');
   background-repeat: no-repeat;
+
+  &.game-family-legends_arceus {
+    border-radius: 50%;
+  }
 }
 
 .pkicon.pkicon-ball-love { %s }
