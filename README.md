@@ -13,8 +13,9 @@ It currently consists of 6 scripts:
 - `chop` - This takes in a JSON file explaining the details of an existing
   spritesheet, and it chops it up into individual images.
 - `scale` - This takes any images in the `images` directory that are greater
-  than 100px in either dimension (height or width) and scales it by factor or
-  0.5. This script will modify the images in place.
+  than the threshold (default 100px) in either dimension (height or width) and
+  either scales it by the provided factor (default 0.5) or to the set dimensions
+  passed in. This script will modify the images in place.
 - `trim` - This takes all images in the `images` directory and trims any excess
   transparency from it. This is so that we can center the sprites based on
   content (non-transparent pixels) and control the padding through CSS.

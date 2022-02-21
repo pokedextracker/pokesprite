@@ -26,7 +26,7 @@ tasks:
   scale:
     desc: Scale any images greater than 100px in any dimension by 0.5.
     cmds:
-      - go run cmd/scale/main.go
+      - go run cmd/scale/main.go {{.CLI_ARGS}}
 
   trim:
     desc: Trim all excess transparency off the images.
