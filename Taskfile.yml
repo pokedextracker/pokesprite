@@ -1,0 +1,80 @@
+version: '3'
+
+includes:
+  os: ./Taskfile_{{OS}}.yml
+
+tasks:
+  default:
+    desc: Run the standard set of commands to generate new outputs and copy it in the right place.
+    cmds:
+      - task: scale
+      - task: trim
+      - task: spritesheet
+      - task: scss
+      - task: copy
+
+  rename:
+    desc: Rename msikma/pokesprite icons to the names that we expect them to be in.
+    cmds:
+      - go run cmd/rename/main.go
+
+  chop:
+    desc: Chop up an existing spritesheet into separate images.
+    cmds:
+      - go run cmd/chop/main.go {{.CLI_ARGS}}
+
+  scale:
+    desc: Scale any images greater than 100px in any dimension by 0.5.
+    cmds:
+      - go run cmd/scale/main.go {{.CLI_ARGS}}
+
+  trim:
+    desc: Trim all excess transparency off the images.
+    cmds:
+      - go run cmd/trim/main.go
+
+  spritesheet:
+    desc: Generate a single spritesheet using the images in the images directory.
+    deps: [output]
+    cmds:
+      - go run cmd/spritesheet/main.go
+      # We could make pngcrush cleanly optional once
+      # https://github.com/go-task/task/issues/608 is fixed.
+      - pngcrush -l 9 output/pokesprite.png output/pokesprite-optimized.png
+      - mv output/pokesprite-optimized.png output/pokesprite.png
+
+  scss:
+    desc: Generate a .scss file for the generated spritesheet using the filenames of the source images.
+    deps: [output]
+    cmds:
+      - go run cmd/scss/main.go
+
+  copy:
+    desc: Copy the generated spritesheet and .scss file into the pokedextracker.com repo (assuming that it was cloned right next to this repo).
+    cmds:
+      - cp output/pokesprite.png ../pokedextracker.com/public
+      - cp output/pokesprite.scss ../pokedextracker.com/app/styles
+    preconditions:
+      - test -f output/pokesprite.png
+      - test -f output/pokesprite.scss
+
+  # Helper tasks
+
+  clean:
+    desc: Deletes the output directory.
+    cmds:
+      - rm -rf output
+    status:
+      - '! test -d output'
+
+  output:
+    desc: Ensures that the output directory exists.
+    cmds:
+      - mkdir output
+    status:
+      - test -d output
+
+  setup:
+    desc: Install necessary dependencies.
+    cmds:
+      - task: os:setup

@@ -10,9 +10,12 @@ It currently consists of 6 scripts:
   [msikma/pokesprite](https://github.com/msikma/pokesprite) to names that can be
   used by the other scripts. Only use this one if you're copying over the
   `icons` and `data` directories from that repo.
+- `chop` - This takes in a JSON file explaining the details of an existing
+  spritesheet, and it chops it up into individual images.
 - `scale` - This takes any images in the `images` directory that are greater
-  than 100px in either dimension (height or width) and scales it by factor or
-  0.5. This script will modify the images in place.
+  than the threshold (default 100px) in either dimension (height or width) and
+  either scales it by the provided factor (default 0.5) or to the set dimensions
+  passed in. This script will modify the images in place.
 - `trim` - This takes all images in the `images` directory and trims any excess
   transparency from it. This is so that we can center the sprites based on
   content (non-transparent pixels) and control the padding through CSS.
@@ -27,23 +30,32 @@ It currently consists of 6 scripts:
   It assumes that this repo and that repo are both cloned in the same parent
   directory. If that is not the case, this script will err.
 
-To run any of them, it's a simple `make` target:
+To run any of them, it's a simple `task` command:
 
 ```sh
-make rename
-make scale
-make trim
-make spritesheet
-make scss
-make copy
+task rename
+task chop -- data.json
+task scale
+task trim
+task spritesheet
+task scss
+task copy
 ```
 
 ## Setup
 
-To have everything working as expected, you need to have a module-aware version
-of Go installed (v1.11 or greater) and `pngcrush`.
+### Task
+
+Instead of `make`, this project uses [`task`](https://taskfile.dev/#/). It seems
+to be a bit cleaner for some specific things that we want to do.
+
+You can find instructions on how to install it
+[here](https://taskfile.dev/#/installation).
 
 ### Go
+
+To have everything working as expected, you need to have a module-aware version
+of Go installed (v1.11 or greater) and `pngcrush`.
 
 To install Go, you can do it any way you prefer. We recommend using
 [`goenv`](https://github.com/syndbg/goenv) so that you can use the correct
@@ -67,9 +79,9 @@ goenv install
 
 ### `pngcrush`
 
-While `pngcrush` is optional, it is recommended. To install it, you can just run
-the following command:
+`pngcrush` is required for the `spritesheet` command. To install it, you can
+just run the following command:
 
 ```sh
-make setup
+task setup
 ```
