@@ -7,6 +7,7 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -17,6 +18,11 @@ func main() {
 
 	for _, file := range files {
 		name := file.Name()
+		if strings.Contains(name, "legends_arceus") {
+			// We intentionally want whitespace for the Legends
+			// Arceus sprites.
+			continue
+		}
 
 		file, err := os.Open("./images/" + name)
 		if err != nil {
