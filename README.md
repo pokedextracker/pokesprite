@@ -8,8 +8,8 @@ It currently consists of 6 scripts:
 
 - `rename` - This renames icons from
   [msikma/pokesprite](https://github.com/msikma/pokesprite) to names that can be
-  used by the other scripts. Only use this one if you're copying over the
-  `icons` and `data` directories from that repo.
+  used by the other scripts. Only use this one if you're copying sprites from
+  that repo. Read the comment at the top of the file for more info.
 - `chop` - This takes in a JSON file explaining the details of an existing
   spritesheet, and it chops it up into individual images.
 - `scale` - This takes any images in the `images` directory that are greater
