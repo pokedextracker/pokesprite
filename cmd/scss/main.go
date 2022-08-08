@@ -30,7 +30,7 @@ const (
   background-repeat: no-repeat;
 
   &.game-family-legends_arceus {
-    border-radius: 50%;
+    border-radius: 50%%;
   }
 }
 

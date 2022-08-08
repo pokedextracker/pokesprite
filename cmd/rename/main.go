@@ -1,11 +1,15 @@
 // This script is used to rename icon files from
-// https://github.com/msikma/pokesprite (using the `data/pkmn.json` file and the
-// `icons` directory) into an `images` directory. This is the first step before
-// generating a new spritesheet. It copies all Pokemon and forms (except
-// right-facing ones and female ones) and their shiny versions as well. The
-// naming format it uses is `<number>-<shiny>-<form>.png` where `<shiny>` and
-// `<form>` are omitted if they are regular. For example, `001.png` and
-// `026-shiny-alola.png`.
+// https://github.com/msikma/pokesprite (using the `data/pokemon.json` file and
+// the `pokemon-*` directories) into an `images` directory. This is the first
+// step before generating a new spritesheet. It copies all Pokemon and forms
+// (except right-facing ones and female ones) and their shiny versions as well.
+// The naming format it uses is `<number>-<shiny>-<form>.png` where `<shiny>`
+// and `<form>` are omitted if they are regular. For example, `001.png` and
+// `026-shiny-alola.png`. It assumes that you have the repo cloned into
+// ../msikma-pokesprite. To make things easier, you can delete all irrelevant
+// Pokemon from the JSON file, but either way, once you've run this command, you
+// probably want to just remove any git modifications. This is mostly useful for
+// new sprites.
 package main
 
 import (
@@ -17,15 +21,21 @@ import (
 )
 
 type pokemon struct {
-	Index int `json:"idx"`
-	Slug  struct {
+	Slug struct {
 		English string `json:"eng"`
 	} `json:"slug"`
-	Icons map[string]map[string]bool `json:"icons"`
+	Gen7 gen `json:"gen-7"`
+	Gen8 gen `json:"gen-8"`
+}
+
+type gen struct {
+	Forms map[string]struct {
+		IsAliasOf *string `json:"is_alias_of"`
+	} `json:"forms"`
 }
 
 func main() {
-	data, err := ioutil.ReadFile("./data/pkmn.json")
+	data, err := ioutil.ReadFile("../msikma-pokesprite/data/pokemon.json")
 	if err != nil {
 		panic(err)
 	}
@@ -42,14 +52,14 @@ func main() {
 	}
 
 	for id, pokemon := range pkmn {
-		for form, opts := range pokemon.Icons {
-			if opts["is_duplicate"] {
+		for form, opts := range pokemon.Gen8.Forms {
+			if opts.IsAliasOf != nil {
 				continue
 			}
 			// Copy regular sprites.
-			src := "./icons/pokemon/regular/" + pokemon.Slug.English
+			src := "../msikma-pokesprite/pokemon-gen8/regular/" + pokemon.Slug.English
 			dest := "./images/" + id
-			if form != "." {
+			if form != "$" {
 				src += "-" + form
 				dest += "-" + form
 			}
@@ -60,9 +70,9 @@ func main() {
 				panic(err)
 			}
 			// Copy shiny sprites.
-			src = "./icons/pokemon/shiny/" + pokemon.Slug.English
+			src = "../msikma-pokesprite/pokemon-gen8/shiny/" + pokemon.Slug.English
 			dest = "./images/" + id + "-shiny"
-			if form != "." {
+			if form != "$" {
 				src += "-" + form
 				dest += "-" + form
 			}
@@ -76,10 +86,10 @@ func main() {
 	}
 
 	// Move love ball sprite.
-	_, err = copy("./icons/pokeball/love.png", "./images/love-ball.png")
-	if err != nil {
-		panic(err)
-	}
+	// _, err = copy("./icons/pokeball/love.png", "./images/love-ball.png")
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
 
 func copy(src, dst string) (int64, error) {
