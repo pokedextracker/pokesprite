@@ -44,7 +44,7 @@ var (
 	width  = 0
 )
 
-var nameRE = regexp.MustCompile(`(\d+)(-shiny)?(-legends_arceus)?(-.*)?\.png`)
+var nameRE = regexp.MustCompile(`(\d+)(-shiny)?(-legends_arceus|-home)?(-.*)?\.png`)
 
 func main() {
 	var buf bytes.Buffer
