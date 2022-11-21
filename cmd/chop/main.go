@@ -30,9 +30,10 @@ type Data struct {
 }
 
 type Pokemon struct {
-	ID   int     `json:"id"`
-	Form *string `json:"form"`
-	Skip bool    `json:"skip"`
+	ID        int     `json:"id"`
+	Form      *string `json:"form"`
+	Skip      bool    `json:"skip"`
+	SkipCount int     `json:"skip_count"` // default 1
 }
 
 func main() {
@@ -69,14 +70,19 @@ func main() {
 	height := (img.Bounds().Size().Y - ((data.Rows + 1) * data.Outline)) / data.Rows
 	width := (img.Bounds().Size().X - ((data.Columns + 1) * data.Outline)) / data.Columns
 
-	for index, pokemon := range data.Pokemon {
+	spriteIndex := 0
+	for _, pokemon := range data.Pokemon {
 		if pokemon.Skip {
+			if pokemon.SkipCount == 0 {
+				pokemon.SkipCount = 1
+			}
+			spriteIndex += pokemon.SkipCount
 			continue
 		}
 
 		// Calculate which row and column we're on based on the index.
-		row := index / data.Columns
-		column := index % data.Columns
+		row := spriteIndex / data.Columns
+		column := spriteIndex % data.Columns
 
 		// Create new image data.
 		r := image.Rectangle{image.Point{0, 0}, image.Point{width - 2*data.Padding, height - 2*data.Padding}}
@@ -104,5 +110,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
+		spriteIndex++
 	}
 }
