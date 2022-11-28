@@ -3,6 +3,8 @@ package size
 import (
 	"image"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 func Max(files []os.FileInfo) (int, int, error) {
@@ -19,7 +21,7 @@ func Max(files []os.FileInfo) (int, int, error) {
 		img, _, err := image.Decode(file)
 		file.Close()
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, errors.Wrapf(err, "image decode: %s: ", name)
 		}
 		bounds := img.Bounds()
 
