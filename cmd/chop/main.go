@@ -38,8 +38,8 @@ type Pokemon struct {
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Println("Usage: task chop -- <filename.json>")
-		fmt.Println("Example: task chop -- ./data/spritesheet.json")
+		fmt.Println("Usage: mise run chop <filename.json>")
+		fmt.Println("Example: mise run chop ./data/spritesheet.json")
 		os.Exit(1)
 	}
 

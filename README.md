@@ -1,10 +1,10 @@
 # pokesprite
 
 Inspired by [msikma/pokesprite](https://github.com/msikma/pokesprite), this repo
-is a simplified version that generates a spritesheet and stylesheet that are
+is a simplified version that generates spritesheets and a stylesheet that are
 meant to be used for [PokedexTracker](https://pokedextracker.com).
 
-It currently consists of 6 scripts:
+It currently consists of 7 scripts:
 
 - `rename` - This renames icons from
   [msikma/pokesprite](https://github.com/msikma/pokesprite) to names that can be
@@ -20,68 +20,48 @@ It currently consists of 6 scripts:
   transparency from it. This is so that we can center the sprites based on
   content (non-transparent pixels) and control the padding through CSS.
 - `spritesheet` - This takes all the images in the `images` directory and
-  stitches them together into a single image.
-- `scss` - This uses the images in the `images` directory to generate a `.scss`
-  file that lists classes with the correct positions so the spritesheet can be
-  used.
-- `copy` - This takes the final outputs (the spritesheet and the `.scss` file)
-  and copies them into their appropriate location in
+  stitches them together into lossless WebP spritesheets: one for regular
+  icons, one for shiny icons, and a regular and shiny one for Legends: Arceus
+  icons. A page only downloads the spritesheets it shows icons from. The love
+  ball is copied over on its own instead, so the home page doesn't need a
+  spritesheet.
+- `css` - This uses the images in the `images` directory to generate a `.css`
+  file that lists classes with the correct spritesheets and positions so the
+  spritesheets can be used.
+- `copy` - This takes the final outputs (the spritesheets, the love ball, and
+  the `.css` file) and copies them into their appropriate location in
   [pokedextracker/pokedextracker.com](https://github.com/pokedextracker/pokedextracker.com).
-  It assumes that this repo and that repo are both cloned in the same parent
-  directory. If that is not the case, this script will err.
+  By default it copies into `../pokedextracker.com`, and it takes another path
+  for a different checkout (see below).
 
-To run any of them, it's a simple `task` command:
+To run any of them, use `mise run`:
 
 ```sh
-task rename
-task chop -- data.json
-task scale
-task trim
-task spritesheet
-task scss
-task copy
+mise run rename
+mise run chop data.json
+mise run scale
+mise run trim
+mise run spritesheet
+mise run css
+mise run copy
 ```
+
+`copy` puts the files into `../pokedextracker.com` by default. To copy them into
+a different checkout, like a worktree, pass its path:
+
+```sh
+mise run copy ~/path/to/pokedextracker.com-worktree
+```
+
+After adding or changing images, `mise run generate` runs `scale`, `trim`,
+`spritesheet`, `css`, and `copy` in order, and takes the same optional path.
+Running it again with no image changes produces the same files byte for byte.
 
 ## Setup
 
-### Task
-
-Instead of `make`, this project uses [`task`](https://taskfile.dev/#/). It seems
-to be a bit cleaner for some specific things that we want to do.
-
-You can find instructions on how to install it
-[here](https://taskfile.dev/#/installation).
-
-### Go
-
-To have everything working as expected, you need to have a module-aware version
-of Go installed (v1.11 or greater) and `pngcrush`.
-
-To install Go, you can do it any way you prefer. We recommend using
-[`goenv`](https://github.com/syndbg/goenv) so that you can use the correct
-version of Go for different projects depending on `.go-version` files. In its
-current state, the v2 beta of `goenv` can't be installed through `brew`
-normally, so you need to fetch from `HEAD` using the following command:
+This project uses [mise](https://mise.jdx.dev) for its tools (Go and `cwebp`)
+and tasks. Once mise is installed, run this in the repo to install the tools:
 
 ```sh
-brew install --HEAD goenv
-```
-
-**Note**: If you already have a v1 version of `goenv` installed, you need to
-uninstall it first.
-
-Once installed, you can go into this projects directory and run the following to
-install the correct version of Go:
-
-```sh
-goenv install
-```
-
-### `pngcrush`
-
-`pngcrush` is required for the `spritesheet` command. To install it, you can
-just run the following command:
-
-```sh
-task setup
+mise install
 ```

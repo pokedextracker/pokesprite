@@ -37,14 +37,14 @@ func main() {
 	if height == -1 && width != -1 ||
 		width == -1 && height != -1 {
 		fmt.Println("Error: Both height and width need to be specified together")
-		fmt.Println("Example: task scale -- -height 100 -width 100")
+		fmt.Println("Example: mise run scale -- -height 100 -width 100")
 		os.Exit(1)
 	}
 
 	scaler, ok := scalers[scalerString]
 	if !ok {
 		fmt.Printf("Error: Invalid scaler %q\n", scalerString)
-		fmt.Println("Example: task scale -- -scaler regular")
+		fmt.Println("Example: mise run scale -- -scaler regular")
 		os.Exit(1)
 	}
 

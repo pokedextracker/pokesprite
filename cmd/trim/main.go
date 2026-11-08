@@ -109,7 +109,9 @@ func main() {
 		// This rectangle represents the full size of the final image. Since we just have the coordinates, we need to
 		// calculate width and height by subtracting.
 		r := image.Rectangle{image.Point{0, 0}, image.Point{right - left, bottom - top}}
-		rgba := image.NewRGBA(r)
+		// NRGBA keeps colors as they are. RGBA would multiply them by their
+		// alpha and round, which changes the colors of semi-transparent pixels.
+		rgba := image.NewNRGBA(r)
 
 		// This point that we're passing in is the offset point to start the cropping.
 		draw.Draw(rgba, r.Bounds(), img, image.Point{left, top}, draw.Src)
