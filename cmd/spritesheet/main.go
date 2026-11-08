@@ -1,93 +1,97 @@
-// This script looks at the `images` directory and stitches all the images into
-// a single spritesheet. If there are new images copied from
-// https://github.com/msikma/pokesprite that are not in the `images` directory,
-// you should run the `rename` script first. It will put the love ball sprite on
-// the first row, and then put all Pokemon on subsequent rows. The `height` and
-// `width` variables should be the max height and width possible. If a new
-// generate produces larger sprites, you should update those values. While this
-// script produces a PNG with the best compression, it's still recommended to
-// use `pngcrush` to get it even smaller.
+// This script looks at the `images` directory and stitches the images into
+// spritesheets: one for regular icons, one for shiny icons, and a regular and
+// shiny one for each game family whose icons are kept separate (see
+// pkg/sheet). That way a page only downloads the icons it can show. If there
+// are new images copied from https://github.com/msikma/pokesprite that are not
+// in the `images` directory, you should run the `rename` script first.
+//
+// Each spritesheet is written as a lossless WebP using `cwebp`, which
+// compresses much better than PNG. The love ball isn't on a spritesheet. It's
+// copied to the output directory as is, so the home page can show it without
+// downloading a spritesheet.
 package main
 
 import (
 	"image"
 	"image/draw"
 	"image/png"
-	"io/ioutil"
-	"math"
 	"os"
-	"sort"
+	"os/exec"
+	"path/filepath"
 
-	"github.com/pokedextracker/pokesprite/pkg/size"
-	"github.com/pokedextracker/pokesprite/pkg/sorter"
+	"github.com/pokedextracker/pokesprite/pkg/sheet"
 )
 
-const (
-	columns = 32
-)
-
-var (
-	height = 0
-	width  = 0
-)
+const outputDir = "./output"
 
 func main() {
-	files, err := ioutil.ReadDir("./images")
+	sheets, err := sheet.Load()
 	if err != nil {
 		panic(err)
 	}
 
-	height, width, err = size.Max(files)
+	// Remove spritesheets from earlier runs, so a sheet that no longer exists
+	// doesn't get copied.
+	old, err := filepath.Glob(filepath.Join(outputDir, "*.webp"))
 	if err != nil {
 		panic(err)
 	}
-
-	// Minus 1 to exclude the love ball, and plus 1 to include it again since it
-	// will be on its own line.
-	rows := int(math.Ceil(float64(len(files)-1)/columns)) + 1
-	r := image.Rectangle{image.Point{0, 0}, image.Point{columns * width, rows * height}}
-	rgba := image.NewRGBA(r)
-
-	// Draw the love ball on its own row.
-	err = drawImage(rgba, "love-ball.png", 0, 0)
-	if err != nil {
-		panic(err)
-	}
-
-	// Sort files alphabetically.
-	sort.Sort(sorter.New(files))
-
-	for i, file := range files {
-		name := file.Name()
-		// Skip drawing the love ball since we already drew it on its own row.
-		if name == "love-ball.png" {
-			continue
-		}
-
-		column := int(math.Mod(float64(i), float64(columns)))
-		row := i/columns + 1
-
-		err := drawImage(rgba, name, column, row)
-		if err != nil {
+	for _, path := range old {
+		if err := os.Remove(path); err != nil {
 			panic(err)
 		}
 	}
 
-	// Write the output png to a file.
-	out, err := os.Create("./output/pokesprite.png")
+	for _, s := range sheets {
+		if err := write(s); err != nil {
+			panic(err)
+		}
+	}
+
+	loveBall, err := os.ReadFile(filepath.Join(sheet.Dir, sheet.LoveBall))
 	if err != nil {
 		panic(err)
 	}
-	defer out.Close()
-	encoder := png.Encoder{CompressionLevel: png.BestCompression}
-	err = encoder.Encode(out, rgba)
+	err = os.WriteFile(filepath.Join(outputDir, sheet.LoveBall), loveBall, 0644)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func drawImage(rgba draw.Image, name string, column, row int) error {
-	file, err := os.Open("./images/" + name)
+// write draws a spritesheet and saves it as a lossless WebP. It's drawn to a
+// temporary PNG first since that's what `cwebp` reads.
+func write(s *sheet.Sheet) error {
+	rgba := image.NewNRGBA(image.Rect(0, 0, s.Width, s.Height))
+	for _, icon := range s.Icons {
+		if err := drawImage(rgba, icon); err != nil {
+			return err
+		}
+	}
+
+	pngPath := filepath.Join(outputDir, s.Name+".png")
+	out, err := os.Create(pngPath)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(pngPath)
+	encoder := png.Encoder{CompressionLevel: png.BestSpeed}
+	err = encoder.Encode(out, rgba)
+	out.Close()
+	if err != nil {
+		return err
+	}
+
+	// -lossless with -z 9 is the slowest, smallest lossless setting. -exact
+	// is left off on purpose: without it, cwebp may change the color of fully
+	// transparent pixels, which can't be seen, and the file is smaller.
+	cmd := exec.Command("cwebp", "-quiet", "-mt", "-lossless", "-z", "9", pngPath, "-o", filepath.Join(outputDir, s.Name+".webp"))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func drawImage(rgba draw.Image, icon sheet.Icon) error {
+	file, err := os.Open(filepath.Join(sheet.Dir, icon.File))
 	if err != nil {
 		return err
 	}
@@ -97,79 +101,7 @@ func drawImage(rgba draw.Image, name string, column, row int) error {
 		return err
 	}
 
-	// wdiff := width - img.Bounds().Dx()
-	// if wdiff < 0 {
-	// 	return fmt.Errorf("width (%dpx) is too small for %s (%dpx)", width, name, img.Bounds().Dx())
-	// }
-	// hdiff := height - img.Bounds().Dy()
-	// if hdiff < 0 {
-	// 	return fmt.Errorf("height (%dpx) is too small for %s (%dpx)", height, name, img.Bounds().Dy())
-	// }
-
-	// woffset := wdiff / 2
-	// hoffset := hdiff / 2
-	x := column * width
-	y := row * height
-	// top, right, bottom, left := trim(img)
-
-	// rect := image.Rectangle{image.Point{x, y}, image.Point{x + (right - left), y + (bottom - top)}}
-	rect := image.Rectangle{image.Point{x, y}, image.Point{x + img.Bounds().Dx(), y + img.Bounds().Dy()}}
-	draw.Draw(rgba, rect, img, image.Point{0, 0}, draw.Src)
-
+	rect := image.Rect(icon.X, icon.Y, icon.X+icon.Width, icon.Y+icon.Height)
+	draw.Draw(rgba, rect, img, img.Bounds().Min, draw.Src)
 	return nil
 }
-
-// func trim(img image.Image) (int, int, int, int) {
-// 	bounds := img.Bounds()
-// 	top := 0
-// 	right := 0
-// 	bottom := 0
-// 	left := 0
-
-// top:
-// 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-// 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-// 			_, _, _, a := img.At(x, y).RGBA()
-// 			transparent := a == 0
-// 			if !transparent {
-// 				top = y
-// 				break top
-// 			}
-// 		}
-// 	}
-// right:
-// 	for x := bounds.Max.X; x >= bounds.Min.X; x-- {
-// 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-// 			_, _, _, a := img.At(x, y).RGBA()
-// 			transparent := a == 0
-// 			if !transparent {
-// 				right = x + 1
-// 				break right
-// 			}
-// 		}
-// 	}
-// bottom:
-// 	for y := bounds.Max.Y; y >= bounds.Min.Y; y-- {
-// 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-// 			_, _, _, a := img.At(x, y).RGBA()
-// 			transparent := a == 0
-// 			if !transparent {
-// 				bottom = y + 1
-// 				break bottom
-// 			}
-// 		}
-// 	}
-// left:
-// 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
-// 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-// 			_, _, _, a := img.At(x, y).RGBA()
-// 			transparent := a == 0
-// 			if !transparent {
-// 				left = x
-// 				break left
-// 			}
-// 		}
-// 	}
-
-// 	return top, right, bottom, left
-// }

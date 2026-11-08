@@ -1,0 +1,92 @@
+[tools]
+go = "1.27.0"
+
+[tools."http:cwebp"]
+version = "1.6.0"
+bin_path = "bin"
+strip_components = 1
+
+[tools."http:cwebp".platforms]
+macos-arm64 = { url = "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-{{version}}-mac-arm64.tar.gz", checksum = "sha256:bc6bf84cc70f3f8574fba797d1e4a7dea4feebe9fa4be919f202413ea2b3b8f2" }
+macos-x64 = { url = "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-{{version}}-mac-x86-64.tar.gz", checksum = "sha256:f112dd83b420ab2a4b27d46610d9827ddf4200216023281de378647ecca31c2a" }
+linux-x64 = { url = "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-{{version}}-linux-x86-64.tar.gz", checksum = "sha256:1c5ffab71efecefa0e3c23516c3a3a1dccb45cc310ae1095c6f14ae268e38067" }
+linux-arm64 = { url = "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-{{version}}-linux-aarch64.tar.gz", checksum = "sha256:69f5eebe203e0f3942fe37986209a1725741be19c152950a4283b376c95ec798" }
+
+# === Generating ===
+# `mise run generate` runs the usual steps after adding or changing images. The
+# rest can also be run one at a time with `mise run <task>`.
+
+[tasks.generate]
+description = "Scale, trim, build the spritesheets and stylesheet, then copy them into pokedextracker.com"
+usage = '''
+arg "[dest]" help="The pokedextracker.com checkout to copy into" default="../pokedextracker.com"
+'''
+run = [
+  "mise run scale",
+  "mise run trim",
+  "mise run spritesheet",
+  "mise run css",
+  "mise run copy \"${usage_dest?}\"",
+]
+
+[tasks.rename]
+description = "Rename msikma/pokesprite icons to the names that we expect them to be in"
+run = "go run ./cmd/rename"
+
+[tasks.chop]
+description = "Chop up an existing spritesheet into separate images (e.g. mise run chop data.json)"
+run = "go run ./cmd/chop"
+
+[tasks.scale]
+description = "Scale any images greater than 100px in any dimension by 0.5 (e.g. mise run scale -- -threshold 50)"
+run = "go run ./cmd/scale"
+
+[tasks.trim]
+description = "Trim all excess transparency off the images"
+run = "go run ./cmd/trim"
+
+[tasks.spritesheet]
+description = "Generate the spritesheets (regular, shiny, and ones for separate game families) using the images in the images directory"
+run = ["mkdir -p output", "go run ./cmd/spritesheet"]
+
+[tasks.css]
+description = "Generate a .css file for the generated spritesheets using the filenames of the source images"
+run = ["mkdir -p output", "go run ./cmd/css"]
+
+[tasks.copy]
+description = "Copy the generated spritesheets, love ball, and .css file into a pokedextracker.com checkout"
+usage = '''
+arg "[dest]" help="The pokedextracker.com checkout to copy into" default="../pokedextracker.com"
+'''
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+dest="${usage_dest?}"
+if [ ! -f output/pokesprite.css ]; then
+  echo "output/pokesprite.css is missing. Run mise run spritesheet and mise run css first." >&2
+  exit 1
+fi
+# Every file the stylesheet points at has to be there, or the site would show
+# blank icons (e.g. after a spritesheet run that failed partway).
+for f in $(grep -o 'url("../images/[^"]*")' output/pokesprite.css | sed 's|url("../images/||; s|")||' | sort -u); do
+  if [ ! -f "output/$f" ]; then
+    echo "output/$f is missing, but pokesprite.css uses it. Run mise run spritesheet and mise run css again." >&2
+    exit 1
+  fi
+done
+if [ ! -d "$dest/app/styles" ]; then
+  echo "$dest doesn't look like a pokedextracker.com checkout (no app/styles)." >&2
+  exit 1
+fi
+mkdir -p "$dest/app/images"
+# Remove the old spritesheets first, so one that no longer exists doesn't
+# linger.
+rm -f "$dest"/app/images/pokesprite*.webp
+cp output/*.webp output/love-ball.png "$dest/app/images"
+cp output/pokesprite.css "$dest/app/styles"
+echo "Copied into $dest"
+'''
+
+[tasks.clean]
+description = "Delete the output directory"
+run = "rm -rf output"
